@@ -1,0 +1,1 @@
+void vWebsocketConnect(char *uri, int port);

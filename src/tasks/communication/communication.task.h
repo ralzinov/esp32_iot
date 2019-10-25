@@ -1,0 +1,1 @@
+void vTaskCommunication(void *pvParameter);
