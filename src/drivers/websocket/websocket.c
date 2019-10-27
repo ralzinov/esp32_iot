@@ -3,27 +3,20 @@
 #include "websocket.h"
 
 #define LOG_TAG "[ws]"
-
-struct esp_websocket_client {
-    esp_websocket_client_config_t   *config;
-    EventGroupHandle_t              status_bits;
-};
+#define websocketCONNECTION_TIMEOUT_MS 100
 
 static void xWebsocketEventHandler(void *xHandlerArgs, esp_event_base_t base, int32_t eventId, void *xEventData)
 {
     esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)xHandlerArgs;
     switch (eventId) {
         case WEBSOCKET_EVENT_CONNECTED:
-            ESP_LOGI(LOG_TAG, "Connected");
-            xEventGroupSetBits(client->status_bits, websocketCONNECTED_BIT);
+            ESP_LOGI(LOG_TAG, "Connected to %s", client->config->uri);
             break;
         case WEBSOCKET_EVENT_DISCONNECTED:
-            ESP_LOGI(LOG_TAG, "Disconnected");
-            xEventGroupClearBits(client->status_bits, websocketCONNECTED_BIT);
+            ESP_LOGI(LOG_TAG, "Disconnected to %s", client->config->uri);
             break;
         case WEBSOCKET_EVENT_ERROR:
-            ESP_LOGI(LOG_TAG, "Error");
-            // TODO handle error
+            ESP_LOGI(LOG_TAG, "Got unhandled error on %s", client->config->uri);
             break;
     }
 }
@@ -41,13 +34,5 @@ esp_websocket_client_handle_t xWebsocketInitConnection(const esp_websocket_clien
 esp_err_t vWebsocketStart(esp_websocket_client_handle_t client)
 {
     ESP_LOGI(LOG_TAG, "Connecting to: %s", client->config->uri);
-    int result = esp_websocket_client_start(client);
-    if (result != ESP_OK)
-    {
-        return ESP_FAIL;
-    }
-
-    int timeout = 100 / portTICK_PERIOD_MS;
-    EventBits_t state = xEventGroupWaitBits(client->status_bits, websocketCONNECTED_BIT, false, true, timeout);
-    return (state & websocketCONNECTED_BIT) ? ESP_OK : ESP_FAIL;
+    return esp_websocket_client_start(client);
 }
