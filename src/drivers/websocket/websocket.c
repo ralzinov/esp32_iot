@@ -1,28 +1,31 @@
+#include "stdint.h"
 #include "esp_log.h"
-#include "protocols/websocket_client/websocket_client.h"
-#include "common/common.h"
+#include "websocket.h"
 
 #define LOG_TAG "[ws]"
-static esp_websocket_client_handle_t websocket_client;
+
+struct esp_websocket_client {
+    esp_websocket_client_config_t   *config;
+    EventGroupHandle_t              status_bits;
+};
+
+// TODO set waiting timeout and handle null response if write was unsuccessfull 
 
 static void websocket_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
-    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
+    esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)handler_args;
     switch (event_id) {
         case WEBSOCKET_EVENT_CONNECTED:
             ESP_LOGI(LOG_TAG, "Connected");
-            xEventGroupSetBits(xConnectionStateGroup, c11nCONNECTED_SERVER_BIT);
+            xEventGroupSetBits(client->status_bits, websocketCONNECTED_BIT);
             break;
         case WEBSOCKET_EVENT_DISCONNECTED:
             ESP_LOGI(LOG_TAG, "Disconnected");
-            xEventGroupClearBits(xConnectionStateGroup, c11nCONNECTED_SERVER_BIT);
-            break;
-        case WEBSOCKET_EVENT_DATA:
-            ESP_LOGI(LOG_TAG, "Data");
-            ESP_LOGW(LOG_TAG, "Received=%.*s\r\n", data->data_len, (char*)data->data_ptr);
+            xEventGroupClearBits(client->status_bits, websocketCONNECTED_BIT);
             break;
         case WEBSOCKET_EVENT_ERROR:
             ESP_LOGI(LOG_TAG, "Error");
+            // TODO handle error
             break;
     }
 }
@@ -30,17 +33,30 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
 /**
  * @brief  Connect to websocket server
 */
-void vWebsocketConnect(char *uri, int port)
+esp_websocket_client_handle_t xWebsocketInitConnection(const esp_websocket_client_config_t *config)
 {
-    ESP_LOGI(LOG_TAG, "Connecting to %s...", uri);
-    const esp_websocket_client_config_t websocket_cfg = {
-        .uri = uri,  
-		.port = port,
-	};
+    esp_websocket_client_handle_t client = esp_websocket_client_init(config);
+    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)client);
+    return client;
+}
 
-    websocket_client = esp_websocket_client_init(&websocket_cfg);
+esp_err_t vWebsocketStart(esp_websocket_client_handle_t client)
+{
+    ESP_LOGI(LOG_TAG, "Connecting to: %s", client->config->uri);
+    int result = esp_websocket_client_start(client);
+    if (result != ESP_OK)
+    {
+        return ESP_FAIL;
+    }
 
-    esp_websocket_register_events(websocket_client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)websocket_client);
-    esp_websocket_client_start(websocket_client);
-    xEventGroupWaitBits(xConnectionStateGroup, c11nCONNECTED_SERVER_BIT, false, true, portMAX_DELAY);
+    // Set timeout
+    int timeout = 100 / portTICK_PERIOD_MS;
+    EventBits_t state = xEventGroupWaitBits(client->status_bits, websocketCONNECTED_BIT, false, true, timeout);
+
+    if (!(state & websocketCONNECTED_BIT))
+    {
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
 }

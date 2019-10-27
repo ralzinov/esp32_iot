@@ -8,7 +8,7 @@
 #include "esp_log.h"
 #include "wifi_sta.h"
 #include "nvs_flash.h"
-#include "common/common.h"
+// #include "common/common.h"
 
 #define LOG_TAG "[wifi]"
 
@@ -19,12 +19,12 @@ static esp_err_t xEventHandler(void *ctx, system_event_t *event)
             esp_wifi_connect();
             break;
         case SYSTEM_EVENT_STA_GOT_IP:
-            xEventGroupSetBits(xConnectionStateGroup, c11nCONNECTED_NETWORK_BIT);
+            // xEventGroupSetBits(xConnectionStateGroup, c11nCONNECTED_NETWORK_BIT);
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
             /* This is a workaround as ESP32 WiFi libs don't currently auto-reassociate. */
             esp_wifi_connect();
-            xEventGroupClearBits(xConnectionStateGroup, c11nCONNECTED_NETWORK_BIT);
+            // xEventGroupClearBits(xConnectionStateGroup, c11nCONNECTED_NETWORK_BIT);
             break;
         default:
             break;
@@ -65,5 +65,5 @@ void vConnectWifi(char *ssid, char *password)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &xWifiConfig));
     ESP_ERROR_CHECK(esp_wifi_start());
-    xEventGroupWaitBits(xConnectionStateGroup, c11nCONNECTED_NETWORK_BIT, false, true, portMAX_DELAY);
+    // xEventGroupWaitBits(xConnectionStateGroup, c11nCONNECTED_NETWORK_BIT, false, true, portMAX_DELAY);
 }
