@@ -5,7 +5,6 @@
 
 #include "drivers/wifi_sta/wifi_sta.h"
 #include "drivers/websocket/websocket.h"
-
 #include "communication.task.h"
 
 #define LOG_TAG "[c11n]"
@@ -13,6 +12,19 @@
 #define c11nSERVER_PORT 8080
 
 static esp_websocket_client_handle_t xConnectionHandle;
+
+static void xIncomingDataEventHandler(void *xHandlerArgs, esp_event_base_t base, int32_t eventId, void *xEventData)
+{
+    if (eventId != WEBSOCKET_EVENT_DATA) return;
+    esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)xHandlerArgs;
+
+    // case WEBSOCKET_EVENT_DATA:
+    //     // data.length = ((esp_websocket_event_data_t *)event_data)->data_len;
+    //     // data.value = (char*)((esp_websocket_event_data_t *)event_data)->data_ptr;
+    //     // void *pxDataPointer = &data;
+    //     // xQueueSend(xServerIncomingQueue, &pxDataPointer, 10);
+    //     break;
+}
 
 static esp_err_t connect()
 {
@@ -27,7 +39,8 @@ static esp_err_t connect()
 		.port = port
 	};
     xConnectionHandle = xWebsocketInitConnection(&xConectionConfig);
-    vWebsocketStart(xConnectionHandle);
+    ESP_ERROR_CHECK(vWebsocketStart(xConnectionHandle));
+    esp_websocket_register_events(xConnectionHandle, WEBSOCKET_EVENT_DATA, xIncomingDataEventHandler, (void *)xConnectionHandle);
     return ESP_OK;
 }
 
@@ -40,10 +53,3 @@ void vTaskCommunication(void *pvParameter)
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
-
-        // case WEBSOCKET_EVENT_DATA:
-        //     // data.length = ((esp_websocket_event_data_t *)event_data)->data_len;
-        //     // data.value = (char*)((esp_websocket_event_data_t *)event_data)->data_ptr;
-        //     // void *pxDataPointer = &data;
-        //     // xQueueSend(xServerIncomingQueue, &pxDataPointer, 10);
-        //     break;

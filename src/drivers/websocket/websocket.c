@@ -9,12 +9,10 @@ struct esp_websocket_client {
     EventGroupHandle_t              status_bits;
 };
 
-// TODO set waiting timeout and handle null response if write was unsuccessfull 
-
-static void websocket_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
+static void xWebsocketEventHandler(void *xHandlerArgs, esp_event_base_t base, int32_t eventId, void *xEventData)
 {
-    esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)handler_args;
-    switch (event_id) {
+    esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)xHandlerArgs;
+    switch (eventId) {
         case WEBSOCKET_EVENT_CONNECTED:
             ESP_LOGI(LOG_TAG, "Connected");
             xEventGroupSetBits(client->status_bits, websocketCONNECTED_BIT);
@@ -36,7 +34,7 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
 esp_websocket_client_handle_t xWebsocketInitConnection(const esp_websocket_client_config_t *config)
 {
     esp_websocket_client_handle_t client = esp_websocket_client_init(config);
-    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)client);
+    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, xWebsocketEventHandler, (void *)client);
     return client;
 }
 
@@ -49,14 +47,7 @@ esp_err_t vWebsocketStart(esp_websocket_client_handle_t client)
         return ESP_FAIL;
     }
 
-    // Set timeout
     int timeout = 100 / portTICK_PERIOD_MS;
     EventBits_t state = xEventGroupWaitBits(client->status_bits, websocketCONNECTED_BIT, false, true, timeout);
-
-    if (!(state & websocketCONNECTED_BIT))
-    {
-        return ESP_FAIL;
-    }
-
-    return ESP_OK;
+    return (state & websocketCONNECTED_BIT) ? ESP_OK : ESP_FAIL;
 }
