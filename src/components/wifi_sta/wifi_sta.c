@@ -9,7 +9,7 @@
 #include "wifi_sta.h"
 #include "nvs_flash.h"
 
-#include "include/status.h"
+#include "include/state.h"
 
 #define LOG_TAG "[wifi]"
 
@@ -54,13 +54,8 @@ void vConnectWifi(char *ssid, char *password)
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
     wifi_config_t xWifiConfig = {.sta = {}};
-        for(int i = 0; i < strlen(ssid); i++) {
-        xWifiConfig.sta.ssid[i] = ssid[i];
-    }
-
-    for(int i = 0; i < strlen(password); i++) {
-        xWifiConfig.sta.password[i] = password[i];
-    }
+    strcpy((char*)&xWifiConfig.sta.ssid, ssid);
+    strcpy((char*)&xWifiConfig.sta.password, password);
 
     ESP_LOGI(LOG_TAG, "Setting WiFi configuration SSID %s...", ssid);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));

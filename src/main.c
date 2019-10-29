@@ -2,14 +2,23 @@
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "include/status.h"
+#include "include/state.h"
+#include "include/mailbox.h"
 #include "tasks/tasks.h"
 
 void app_main()
 {
     xAppStateEventGroup = xEventGroupCreate();
+    xMailboxIncomingQueue = xQueueCreate(1, sizeof(struct xMailboxMessage*));
 
+    static xC11nTaskParameters xC11nTaskParams = {
+        .port = 8080,
+        .ssid = "JSF",
+        .password = "JM6R6DPK",
+        .uri = "ws://192.168.1.8",
+    };
+
+    xTaskCreate(&vTaskCommunication, "vTaskCommunication", 4096, (void *)&xC11nTaskParams, 5, NULL);
     xTaskCreate(&vTaskHeartbeat, "vTaskHeartbeat", 4096, NULL, 1, NULL);
-    xTaskCreate(&vTaskCommunication, "vTaskCommunication", 4096, NULL, 5, NULL);
     xTaskCreate(&vTaskGPIO, "vTaskGPIO", 4096, NULL, 3, NULL);
 }

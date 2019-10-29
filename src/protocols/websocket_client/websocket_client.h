@@ -79,7 +79,7 @@ typedef esp_err_t (* websocket_event_callback_t)(esp_websocket_event_handle_t ev
  * @brief Websocket client setup configuration
  */
 typedef struct {
-    const char                  *uri;                       /*!< Websocket URI, the information on the URI can be overrides the other fields below, if any */
+    char                  *uri;                       /*!< Websocket URI, the information on the URI can be overrides the other fields below, if any */
     const char                  *host;                      /*!< Domain or IP as string */
     int                         port;                       /*!< Port to connect, default depend on esp_websocket_transport_t (80 or 443) */
     const char                  *username;                  /*!< Using for Http authentication - Not supported for now */

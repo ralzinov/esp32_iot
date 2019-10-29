@@ -2,7 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "include/status.h"
+#include "include/state.h"
 #include "heartbeat.task.h"
 
 #define LED_GPIO 18
