@@ -5,22 +5,17 @@
 #include "include/mailbox.h"
 
 #define LOG_TAG "[gpio]"
+#define TASK_ID 'a'
+
+void vMessageHandler(char *pcData)
+{
+    ESP_LOGW(LOG_TAG, "Received=%s\n", pcData);
+}
 
 void vTaskGPIO(void *pvParameter)
 {
     while(1) {
-        int length = uxQueueMessagesWaiting(xMailboxIncomingQueue);
-        if (length > 0)
-        {
-            printf("Got %d messages", length);
-
-            struct xMailboxMessage *data;
-            BaseType_t xStatus = xQueueReceive(xMailboxIncomingQueue, &data, 0);
-            if (xStatus)
-            {
-                ESP_LOGW(LOG_TAG, "Received=%.*s\r\n", data->length, (char*)data->value);
-            }
-        }
+        vMailboxRecieve(vMessageHandler, TASK_ID);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }

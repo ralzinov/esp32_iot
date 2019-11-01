@@ -13,19 +13,37 @@
 #define LOG_TAG "[c11n]"
 
 static esp_websocket_client_handle_t xConnectionHandle;
-static struct xMailboxMessage message;
-static void *pxMailboxMessagePointer = &message;
+static char *mailboxMessage;
+
+static void sendDataToMailboxIncoming(esp_websocket_event_data_t *data)
+{
+    int length = data->data_len;
+    char *prevMailBoxMessage = mailboxMessage;
+    mailboxMessage = (char*)malloc(length + 1);
+    if (mailboxMessage == NULL) {
+        ESP_LOGE(LOG_TAG, "Failed to allocate memory for incoming mailbox message");
+        // TODO send NACK "no memory"
+        return;
+    }
+
+    memset(mailboxMessage, 0, length + 1);
+    memcpy(mailboxMessage, data->data_ptr, length);
+    if(xQueueSend(xMailboxIncomingQueue, &mailboxMessage, 100 / portTICK_PERIOD_MS)) {
+        ESP_LOGI(LOG_TAG, "Incoming message handled");
+        // send ACK
+    } else {
+        xQueueReset(xMailboxIncomingQueue);
+        ESP_LOGE(LOG_TAG, "Incoming message is unhandled");
+        // send NACK "message is unhandled"
+    }
+    free(prevMailBoxMessage);
+}
 
 static void vWebsocketEventHandler(void *xHandlerArgs, esp_event_base_t base, int32_t eventId, void *xEventData)
 {
-    // esp_websocket_client_handle_t client = (esp_websocket_client_handle_t)xHandlerArgs;
-    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)xEventData;
-
     switch (eventId) {
         case WEBSOCKET_EVENT_DATA:
-            message.length = data->data_len;
-            message.value = (char*)data->data_ptr;
-            xQueueSend(xMailboxIncomingQueue, &pxMailboxMessagePointer, portMAX_DELAY);
+            sendDataToMailboxIncoming((esp_websocket_event_data_t *)xEventData);
             break;
 
         case WEBSOCKET_EVENT_CONNECTED:

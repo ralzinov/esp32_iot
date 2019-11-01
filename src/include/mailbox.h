@@ -5,10 +5,10 @@
  * Mailbox entity must be used by tasks only
  * Components mush remain clean of business logic
  */
-typedef struct xMailboxMessage {
-    int length;
-    char *value;
-} xMailboxMessage;
 
 QueueHandle_t xMailboxIncomingQueue;
 QueueHandle_t xMailboxOutcomingQueue;
+
+typedef void (*xMailboxMsgHandler)(char* pcEventData);
+
+void vMailboxRecieve(xMailboxMsgHandler vMailboxMsgHandler, int taskId);
