@@ -8,8 +8,8 @@
 
 void app_main()
 {
+    vMailboxInit();
     xAppStateEventGroup = xEventGroupCreate();
-    xMailboxIncomingQueue = xQueueCreate(1, sizeof(char*));
 
     static xC11nTaskParameters xC11nTaskParams = {
         .port = 8080,

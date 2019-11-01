@@ -11,4 +11,5 @@ QueueHandle_t xMailboxOutcomingQueue;
 
 typedef void (*xMailboxMsgHandler)(char* pcEventData);
 
+void vMailboxInit();
 void vMailboxRecieve(xMailboxMsgHandler vMailboxMsgHandler, int taskId);

@@ -1,5 +1,10 @@
 #include "mailbox.h"
 
+void vMailboxInit()
+{
+    xMailboxIncomingQueue = xQueueCreate(1, sizeof(char*));
+}
+
 void vMailboxRecieve(xMailboxMsgHandler vMailboxMsgHandler, int taskId)
 {
     char *pData;
