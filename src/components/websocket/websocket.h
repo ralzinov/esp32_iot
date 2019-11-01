@@ -55,4 +55,7 @@ struct esp_websocket_client {
 };
 
 esp_websocket_client_handle_t xWebsocketInitConnection(const esp_websocket_client_config_t *config);
-esp_err_t vWebsocketStart(esp_websocket_client_handle_t client);
+
+esp_err_t xWebsocketStart(esp_websocket_client_handle_t client);
+
+esp_err_t xWebsocketSend(esp_websocket_client_handle_t client, const char *data);
