@@ -18,9 +18,9 @@ void app_main()
         .uri = "ws://192.168.1.8",
     };
 
-    xTaskCreate(&vTaskCommunication, "vTaskCommunication", 4096, (void *)&xC11nTaskParams, 5, NULL);
+    xTaskCreate(&vTaskCommunication, "vTaskCommunication", 4096, (void *)&xC11nTaskParams, 1, NULL);
     xTaskCreate(&vTaskHeartbeat, "vTaskHeartbeat", 4096, NULL, 1, NULL);
-    xTaskCreate(&vTaskGPIO, "vTaskGPIO", 4096, NULL, 3, NULL);
+    xTaskCreate(&vEndpointTaskGPIO, "vTaskGPIO", 4096, NULL, 2, NULL);
 }
 
 /**

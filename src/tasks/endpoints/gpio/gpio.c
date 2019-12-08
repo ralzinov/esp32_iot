@@ -5,7 +5,7 @@
 #include "include/mailbox.h"
 
 #define LOG_TAG "[gpio]"
-#define TASK_ID 1
+#define ENDPOINT_ID 1
 
 void vMessageHandler(xMailboxMessage *pMessage, void *params)
 {
@@ -13,10 +13,10 @@ void vMessageHandler(xMailboxMessage *pMessage, void *params)
     pMessage->onRecieve(pMessage, MSG_OK);
 }
 
-void vTaskGPIO(void *pvParameter)
+void vEndpointTaskGPIO(void *pvParameter)
 {
     while(1) {
-        vMailboxRecieve(TASK_ID, vMessageHandler, NULL);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vMailboxRecieve(ENDPOINT_ID, vMessageHandler, NULL);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

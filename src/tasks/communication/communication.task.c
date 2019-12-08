@@ -14,11 +14,11 @@
 
 /**
  * Message format:
- * |                    HEADER                    |    BODY     |
- * |   TASK_ID    |  MESSAGE_TYPE  |  MESSAGE_ID  |    DATA     |
- * |   1 byte     |     1byte      |    1byte     |   n bytes   |
+ * |                        HEADER                    |    BODY     |
+ * |   ENDPOINT_ID    |  MESSAGE_TYPE  |  MESSAGE_ID  |    DATA     |
+ * |     1 byte       |     1byte      |    1byte     |   n bytes   |
  */
-#define C11N_MESSAGE_HEADER_TASK_ID_INDEX       0
+#define C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX   0
 #define C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX    1
 #define C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX  2
 #define C11N_MESSAGE_HEADER_LENGTH  3
@@ -36,9 +36,9 @@ static void *clone(void *dataPointer, int length)
 
 static void sendStatus(xMailboxMessage *pMessage, int status)
 {
-    const char messageBody[] = {pMessage->taskId, status, pMessage->messageId};
+    const char messageBody[] = {pMessage->endpointId, status, pMessage->messageId};
     if (esp_websocket_client_send(xConnectionHandle, messageBody, C11N_MESSAGE_HEADER_LENGTH, 100) == ESP_FAIL) {
-        ESP_LOGE(LOG_TAG, "Task %d failed to respond with status %d", pMessage->taskId, status);
+        ESP_LOGE(LOG_TAG, "Endpoint %d failed to respond with status %d", pMessage->endpointId, status);
         // TODO handle
     }
 }
@@ -58,7 +58,7 @@ static xMailboxMessage *parseMessage(esp_websocket_event_data_t *data)
         int dataLength = data->data_len - C11N_MESSAGE_HEADER_LENGTH;
         void *pData = clone(pDataBody, dataLength);
         if (pData != NULL) {
-            (*pMessage).taskId = *data->data_ptr + C11N_MESSAGE_HEADER_TASK_ID_INDEX;
+            (*pMessage).endpointId = *data->data_ptr + C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX;
             (*pMessage).messageType = *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX;
             (*pMessage).messageId = *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX;
             (*pMessage).pData = pData;

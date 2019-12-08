@@ -6,7 +6,7 @@
 #define ERR_NOT_RECIEVED             2
 
 /**
- * Note: Mailbox entity must be used by tasks only
+ * Note: Mailbox entity must be used by endpoint tasks only
  * Components mush remain clean of business logic
  */
 
@@ -23,9 +23,9 @@ struct xMailboxMessage {
     int length;
     int messageId;
     int messageType;
-    int taskId;
+    int endpointId;
 };
 
 typedef void (*xMailboxMsgHandler)(xMailboxMessage *pMessage, void *params);
-void vMailboxRecieve(int taskId, xMailboxMsgHandler vMailboxMsgHandler, void *params);
+void vMailboxRecieve(int endpointId, xMailboxMsgHandler vMailboxMsgHandler, void *params);
 void vMailboxInit();
