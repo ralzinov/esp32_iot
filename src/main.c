@@ -22,3 +22,9 @@ void app_main()
     xTaskCreate(&vTaskHeartbeat, "vTaskHeartbeat", 4096, NULL, 1, NULL);
     xTaskCreate(&vTaskGPIO, "vTaskGPIO", 4096, NULL, 3, NULL);
 }
+
+/**
+ * TODO
+ * pass task ids to params
+ * pass task log tag to params
+ */

@@ -2,17 +2,18 @@
 
 void vMailboxInit()
 {
-    xMailboxIncomingQueue = xQueueCreate(1, sizeof(char*));
+    xMailboxIncomingQueue = xQueueCreate(1, sizeof(xMailboxMessage*));
+    xMailboxOutcomingQueue = xQueueCreate(1, sizeof(xMailboxMessage*));
 }
 
-void vMailboxRecieve(xMailboxMsgHandler vMailboxMsgHandler, int taskId)
+void vMailboxRecieve(int taskId, xMailboxMsgHandler vMailboxMsgHandler, void *params)
 {
-    char *pData;
+    xMailboxMessage *pMessage;
     if (uxQueueMessagesWaiting(xMailboxIncomingQueue)) {
-        BaseType_t xStatus = xQueuePeek(xMailboxIncomingQueue, &pData, 0);
-        if (xStatus && *pData == taskId) {
+        BaseType_t xStatus = xQueuePeek(xMailboxIncomingQueue, &pMessage, 0);
+        if (xStatus && pMessage->id == taskId) {
             xQueueReset(xMailboxIncomingQueue);
-            vMailboxMsgHandler(pData);
+            vMailboxMsgHandler(pMessage, params);
         }
     }
 }

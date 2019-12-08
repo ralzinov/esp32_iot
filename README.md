@@ -1,4 +1,16 @@
 
+
+## Architecture
+
+[server]⟵ws⟶[c11n]
+                ↑↓
+             [mailbox]
+                │
+                ├[task 1]
+                ├[task 2]
+                └[task n]
+
+
 ## Code style
     ### Variable Names
         Variables are prefixed with their type: 

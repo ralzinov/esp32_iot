@@ -36,8 +36,3 @@ esp_err_t xWebsocketStart(esp_websocket_client_handle_t client)
     ESP_LOGI(LOG_TAG, "Connecting to: %s", client->config->uri);
     return esp_websocket_client_start(client);
 }
-
-esp_err_t xWebsocketSend(esp_websocket_client_handle_t client, const char *data)
-{
-    return esp_websocket_client_send(client, data, strlen(data), 100);
-}
