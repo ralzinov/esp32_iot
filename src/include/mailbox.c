@@ -11,7 +11,7 @@ void vMailboxRecieve(int taskId, xMailboxMsgHandler vMailboxMsgHandler, void *pa
     xMailboxMessage *pMessage;
     if (uxQueueMessagesWaiting(xMailboxIncomingQueue)) {
         BaseType_t xStatus = xQueuePeek(xMailboxIncomingQueue, &pMessage, 0);
-        if (xStatus && pMessage->id == taskId) {
+        if (xStatus && pMessage->taskId == taskId) {
             xQueueReset(xMailboxIncomingQueue);
             vMailboxMsgHandler(pMessage, params);
         }

@@ -10,7 +10,7 @@
 void vMessageHandler(xMailboxMessage *pMessage, void *params)
 {
     ESP_LOGI(LOG_TAG, "Received=%.*s\r\n", pMessage->length, (char *)pMessage->pData);
-    pMessage->onRecieve(pMessage, STATUS_OK);
+    pMessage->onRecieve(pMessage, MSG_OK);
 }
 
 void vTaskGPIO(void *pvParameter)

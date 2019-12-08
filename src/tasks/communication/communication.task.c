@@ -12,15 +12,18 @@
 
 #define LOG_TAG "[c11n]"
 
-#define C11N_MESSAGE_HEADER_LENGTH  2
-
-static esp_websocket_client_handle_t xConnectionHandle;
-
 /**
  * Message format:
- * [   TASK_ID    ][  STATUS  ][    BODY    ]
- * |   1 byte     ||  1byte   ||   n bytes  |
+ * |                    HEADER                    |    BODY     |
+ * |   TASK_ID    |  MESSAGE_TYPE  |  MESSAGE_ID  |    DATA     |
+ * |   1 byte     |     1byte      |    1byte     |   n bytes   |
  */
+#define C11N_MESSAGE_HEADER_TASK_ID_INDEX       0
+#define C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX    1
+#define C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX  2
+#define C11N_MESSAGE_HEADER_LENGTH  3
+
+static esp_websocket_client_handle_t xConnectionHandle;
 
 static void *clone(void *dataPointer, int length)
 {
@@ -31,35 +34,33 @@ static void *clone(void *dataPointer, int length)
     return str;
 }
 
-static void sendStatus(int taskId, int status)
+static void sendStatus(xMailboxMessage *pMessage, int status)
 {
-    ESP_LOGE(LOG_TAG, "Send status %d Task %d", status, taskId);
-
-    const char messageBody[] = {taskId, status};
+    const char messageBody[] = {pMessage->taskId, status, pMessage->messageId};
     if (esp_websocket_client_send(xConnectionHandle, messageBody, C11N_MESSAGE_HEADER_LENGTH, 100) == ESP_FAIL) {
-        ESP_LOGE(LOG_TAG, "Task %d failed to respond with status %d", taskId, status);
+        ESP_LOGE(LOG_TAG, "Task %d failed to respond with status %d", pMessage->taskId, status);
         // TODO handle
     }
 }
 
 static void onMessageRecieved(xMailboxMessage *pMessage, int status)
 {
-    sendStatus(pMessage->id, status);
+    sendStatus(pMessage, status);
     free(pMessage->pData);
     free(pMessage);
 }
 
-static xMailboxMessage *getMessage(esp_websocket_event_data_t *data)
+static xMailboxMessage *parseMessage(esp_websocket_event_data_t *data)
 {
     xMailboxMessage *pMessage = malloc(sizeof(xMailboxMessage));
     if (pMessage != NULL) {
         char *pDataBody = ((char *)data->data_ptr) + C11N_MESSAGE_HEADER_LENGTH;
         int dataLength = data->data_len - C11N_MESSAGE_HEADER_LENGTH;
-        // ESP_LOGI(LOG_TAG, "body: [%.*s]: %d\r\n", data->data_len, (char*)data->data_ptr, data->data_len);
-
         void *pData = clone(pDataBody, dataLength);
         if (pData != NULL) {
-            (*pMessage).id = *data->data_ptr;
+            (*pMessage).taskId = *data->data_ptr + C11N_MESSAGE_HEADER_TASK_ID_INDEX;
+            (*pMessage).messageType = *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX;
+            (*pMessage).messageId = *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX;
             (*pMessage).pData = pData;
             (*pMessage).length = dataLength;
             (*pMessage).onRecieve = onMessageRecieved;
@@ -70,10 +71,10 @@ static xMailboxMessage *getMessage(esp_websocket_event_data_t *data)
 
 static void sendDataToMailboxIncoming(esp_websocket_event_data_t *data)
 {
-    xMailboxMessage *pMessage = getMessage(data);
+    xMailboxMessage *pMessage = parseMessage(data);
     if (!pMessage) {
         ESP_LOGE(LOG_TAG, "Failed to allocate memory for incoming mailbox message");
-        sendStatus(*(int *)data->data_ptr, STATUS_FAILED_TO_ALLOCATE_MEMORY);
+        sendStatus(*(int *)data->data_ptr, ERR_NOT_ENOUGH_MEMORY);
         return;
     }
 
@@ -83,16 +84,13 @@ static void sendDataToMailboxIncoming(esp_websocket_event_data_t *data)
     if (uxQueueMessagesWaiting(xMailboxIncomingQueue)) {
         xMailboxMessage *prevMessage;
         if (xQueueReceive(xMailboxIncomingQueue, &prevMessage, 0)) {
-            prevMessage->onRecieve(prevMessage, STATUS_MESSAGE_IS_UNHANDLED);
+            prevMessage->onRecieve(prevMessage, ERR_NOT_RECIEVED);
         } else {
             xQueueReset(xMailboxIncomingQueue);
             // TODO handle case
         }
     }
-
-    if(!xQueueSend(xMailboxIncomingQueue, &pMessage, 100 / portTICK_PERIOD_MS)) {
-        pMessage->onRecieve(pMessage, STATUS_MESSAGE_FAILED_TO_DELIVER);
-    }
+    xQueueSend(xMailboxIncomingQueue, &pMessage, 0);
 }
 
 static void vWebsocketEventHandler(void *xHandlerArgs, esp_event_base_t base, int32_t eventId, void *xEventData)

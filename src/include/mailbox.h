@@ -1,10 +1,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
-#define STATUS_OK                               0
-#define STATUS_FAILED_TO_ALLOCATE_MEMORY        1
-#define STATUS_MESSAGE_IS_UNHANDLED             2
-#define STATUS_MESSAGE_FAILED_TO_DELIVER        3
+#define MSG_OK                       0
+#define ERR_NOT_ENOUGH_MEMORY        1
+#define ERR_NOT_RECIEVED             2
 
 /**
  * Note: Mailbox entity must be used by tasks only
@@ -22,7 +21,9 @@ struct xMailboxMessage {
     xMailboxOnRecieve onRecieve;
     void *pData;
     int length;
-    int id;
+    int messageId;
+    int messageType;
+    int taskId;
 };
 
 typedef void (*xMailboxMsgHandler)(xMailboxMessage *pMessage, void *params);
