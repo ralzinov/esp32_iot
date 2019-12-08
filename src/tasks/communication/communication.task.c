@@ -23,6 +23,12 @@
 #define C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX  2
 #define C11N_MESSAGE_HEADER_LENGTH  3
 
+#define ENDPOINT_ID(data)   *data->data_ptr + C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX
+#define MESSAGE_TYPE(data)  *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX
+#define MESSAGE_ID(data)    *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX
+#define DATA_BODY(data)     (char *)data->data_ptr + C11N_MESSAGE_HEADER_LENGTH
+#define DATA_LENGTH(data)   data->data_len - C11N_MESSAGE_HEADER_LENGTH
+
 static esp_websocket_client_handle_t xConnectionHandle;
 
 static void *clone(void *dataPointer, int length)
@@ -34,18 +40,18 @@ static void *clone(void *dataPointer, int length)
     return str;
 }
 
-static void sendStatus(xMailboxMessage *pMessage, int status)
+static void sendStatus(int endpointId, int messageId, int status)
 {
-    const char messageBody[] = {pMessage->endpointId, status, pMessage->messageId};
+    const char messageBody[] = {endpointId, status, messageId};
     if (esp_websocket_client_send(xConnectionHandle, messageBody, C11N_MESSAGE_HEADER_LENGTH, 100) == ESP_FAIL) {
-        ESP_LOGE(LOG_TAG, "Endpoint %d failed to respond with status %d", pMessage->endpointId, status);
+        ESP_LOGE(LOG_TAG, "Endpoint %d failed to respond with status %d to message #%d", endpointId, status, messageId);
         // TODO handle
     }
 }
 
 static void onMessageRecieved(xMailboxMessage *pMessage, int status)
 {
-    sendStatus(pMessage, status);
+    sendStatus(pMessage->endpointId, pMessage->messageId, status);
     free(pMessage->pData);
     free(pMessage);
 }
@@ -54,13 +60,13 @@ static xMailboxMessage *parseMessage(esp_websocket_event_data_t *data)
 {
     xMailboxMessage *pMessage = malloc(sizeof(xMailboxMessage));
     if (pMessage != NULL) {
-        char *pDataBody = ((char *)data->data_ptr) + C11N_MESSAGE_HEADER_LENGTH;
-        int dataLength = data->data_len - C11N_MESSAGE_HEADER_LENGTH;
+        char *pDataBody =  DATA_BODY(data);
+        int dataLength = DATA_LENGTH(data);
         void *pData = clone(pDataBody, dataLength);
         if (pData != NULL) {
-            (*pMessage).endpointId = *data->data_ptr + C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX;
-            (*pMessage).messageType = *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX;
-            (*pMessage).messageId = *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX;
+            (*pMessage).endpointId = ENDPOINT_ID(data);
+            (*pMessage).messageType = MESSAGE_TYPE(data);
+            (*pMessage).messageId = MESSAGE_ID(data);
             (*pMessage).pData = pData;
             (*pMessage).length = dataLength;
             (*pMessage).onRecieve = onMessageRecieved;
@@ -74,7 +80,7 @@ static void sendDataToMailboxIncoming(esp_websocket_event_data_t *data)
     xMailboxMessage *pMessage = parseMessage(data);
     if (!pMessage) {
         ESP_LOGE(LOG_TAG, "Failed to allocate memory for incoming mailbox message");
-        sendStatus(*(int *)data->data_ptr, ERR_NOT_ENOUGH_MEMORY);
+        sendStatus(ENDPOINT_ID(data), MESSAGE_ID(data), ERR_NOT_ENOUGH_MEMORY);
         return;
     }
 
