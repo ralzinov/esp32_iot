@@ -14,24 +14,24 @@
 
 /**
  * Message format:
- * |                        HEADER                    |    BODY     |
- * |   ENDPOINT_ID    |  MESSAGE_TYPE  |  MESSAGE_ID  |    DATA     |
- * |     1 byte       |     1byte      |    1byte     |   n bytes   |
+ * |                        HEADER                      |    BODY     |
+ * |   ENDPOINT_ID    |   MESSAGE_ID   |  MESSAGE_TYPE  |    DATA     |
+ * |     1 byte       |     1byte      |     1byte      |   n bytes   |
  */
+#define C11N_MESSAGE_HEADER_LENGTH 3
 #define C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX   0
 #define C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX    1
 #define C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX  2
-#define C11N_MESSAGE_HEADER_LENGTH  3
 
-#define ENDPOINT_ID(data)   *data->data_ptr + C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX
-#define MESSAGE_TYPE(data)  *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX
-#define MESSAGE_ID(data)    *data->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX
-#define DATA_BODY(data)     (char *)data->data_ptr + C11N_MESSAGE_HEADER_LENGTH
-#define DATA_LENGTH(data)   data->data_len - C11N_MESSAGE_HEADER_LENGTH
+#define ENDPOINT_ID(v)   *(v->data_ptr + C11N_MESSAGE_HEADER_ENDPOINT_ID_INDEX)
+#define MESSAGE_TYPE(v)  *(v->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_TYPE_INDEX)
+#define MESSAGE_ID(v)    *(v->data_ptr + C11N_MESSAGE_HEADER_MESSAGE_ID_INDEX)
+#define DATA_BODY_PTR(v)  (char *)v->data_ptr + C11N_MESSAGE_HEADER_LENGTH
+#define DATA_LENGTH(v)     v->data_len - C11N_MESSAGE_HEADER_LENGTH
 
 static esp_websocket_client_handle_t xConnectionHandle;
 
-static void *clone(void *dataPointer, int length)
+static char *clone(char *dataPointer, int length)
 {
     char *str = malloc(length);
     if (str != NULL) {
@@ -60,9 +60,10 @@ static xMailboxMessage *parseMessage(esp_websocket_event_data_t *data)
 {
     xMailboxMessage *pMessage = malloc(sizeof(xMailboxMessage));
     if (pMessage != NULL) {
-        char *pDataBody =  DATA_BODY(data);
         int dataLength = DATA_LENGTH(data);
-        void *pData = clone(pDataBody, dataLength);
+        char *pDataBody = DATA_BODY_PTR(data);
+        char *pData = clone(pDataBody, dataLength);
+
         if (pData != NULL) {
             (*pMessage).endpointId = ENDPOINT_ID(data);
             (*pMessage).messageType = MESSAGE_TYPE(data);
@@ -84,7 +85,6 @@ static void sendDataToMailboxIncoming(esp_websocket_event_data_t *data)
         return;
     }
 
-    // ESP_LOGI(LOG_TAG, "Id: %d\r\n", pMessage->id);
     // ESP_LOGI(LOG_TAG, "Data: %.*s\r\n", pMessage->length, (char*)pMessage->pData);
 
     if (uxQueueMessagesWaiting(xMailboxIncomingQueue)) {

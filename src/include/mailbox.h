@@ -4,6 +4,7 @@
 #define MSG_OK                       0
 #define ERR_NOT_ENOUGH_MEMORY        1
 #define ERR_NOT_RECIEVED             2
+#define ERR_UNSUPORTED_MESSAGE_TYPE  3
 
 /**
  * Note: Mailbox entity must be used by endpoint tasks only
@@ -19,7 +20,7 @@ typedef struct xMailboxMessage xMailboxMessage;
 typedef void (*xMailboxOnRecieve)(xMailboxMessage *pMessage, int status);
 struct xMailboxMessage {
     xMailboxOnRecieve onRecieve;
-    void *pData;
+    char *pData;
     int length;
     int messageId;
     int messageType;
