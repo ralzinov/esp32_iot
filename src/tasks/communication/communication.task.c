@@ -133,6 +133,6 @@ void vTaskCommunication(void *pvParameters)
     ESP_ERROR_CHECK(xConnect((xC11nTaskParameters *)pvParameters));
 
     while(1) {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(1);
     }
 }

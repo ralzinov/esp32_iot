@@ -65,6 +65,6 @@ void vEndpointTaskGPIO(void *pvParameter)
 {
     while(1) {
         vMailboxRecieve(ENDPOINT_ID, vMessageHandler, NULL);
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(1);
     }
 }
