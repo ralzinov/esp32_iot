@@ -8,22 +8,31 @@
 #define ENDPOINT_ID 1
 
 #define GPIO_SET_INPUT      1
-#define GPIO_SET_OUTPUT     2
-#define GPIO_SET_LEVEL      3
-#define GPIO_RESET          4
+#define GPIO_SET_HIGH       2
+#define GPIO_SET_LOW        3
+#define GPIO_GET_STATE      4
+#define GPIO_RESET          5
 
 #define GPIO_NUMBER_INDEX   0
-#define GPIO_LEVEL_INDEX    1
 
 #define GPIO_NUMBER(pData) *(pData + GPIO_NUMBER_INDEX)
-#define GPIO_LEVEL(pData)  *(pData + GPIO_LEVEL_INDEX)
 
 /**
  * Data format:
- * |            DATA              |
- * |  GPIO_NUMBER |   GPIO_LEVEL  |
- * |    1 byte    |   0-1 bytes   |
+ * |      DATA    |
+ * |  GPIO_NUMBER |
+ * |    1 byte    |
  */
+
+// GPIO_IS_VALID_GPIO
+
+static void writeLevel(int pin, int level)
+{
+    gpio_reset_pin(pin);
+    gpio_pad_select_gpio(pin);
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT);
+    gpio_set_level(pin, level);
+}
 
 void vMessageHandler(xMailboxMessage *pMessage, void *params)
 {
@@ -37,13 +46,15 @@ void vMessageHandler(xMailboxMessage *pMessage, void *params)
             break;
         }
 
-        case GPIO_SET_OUTPUT: {
-            ESP_LOGI(LOG_TAG, "Set %d pin to output", GPIO_NUMBER(pData));
+        case GPIO_SET_HIGH: {
+            ESP_LOGI(LOG_TAG, "Set %d pin HIGH", GPIO_NUMBER(pData));
+            writeLevel(GPIO_NUMBER(pData), true);
             break;
         }
 
-        case GPIO_SET_LEVEL: {
-            ESP_LOGI(LOG_TAG, "Set %d pin to level %d", GPIO_NUMBER(pData), GPIO_LEVEL(pData));
+        case GPIO_SET_LOW: {
+            ESP_LOGI(LOG_TAG, "Set %d pin LOW", GPIO_NUMBER(pData));
+            writeLevel(GPIO_NUMBER(pData), false);
             break;
         }
 
